@@ -1,0 +1,21 @@
+subject <- "Coffee"
+tweets <- searchTwitter(subject,n =7500,lang ="en", since = "2010-01-01")
+tweets <- sapply(tweets, function(x) x$getText())
+#original_rstats <- strip_retweets(rstats)
+tweets <- as.data.frame(tweets)
+colnames(tweets) <- c("text")
+
+reg_words <- "([^A-Za-z_\\d#@']|'(?![A-Za-z_\\d#@]))"
+mystopwords <- c(stop_words$word, subject, tolower(subject), paste(c('#', '@'), subject, sep = ""), tolower(paste(c('#', '@'), subject, sep = "")), strsplit(subject, split = ""))
+mystopwords <- unlist(mystopwords)
+#Run above line if searching a specific topic
+#If not, change the filter below and make sure to refernce the original stop word lexicons 
+
+tidy_tweets <- tweets %>%
+  filter(!str_detect(text, "^RT")) %>%
+  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|http://[A-Za-z\\d]+|&amp;|&lt;|&gt;|RT|https", "")) %>%
+  unnest_tokens(word, text, token = "regex", pattern = reg_words) %>%
+  filter(!word %in% mystopwords,
+         str_detect(word, "[a-z]"))
+
+wordcloud(Corpus(VectorSource(tidy_tweets)), max.words = 100)
